@@ -18,6 +18,7 @@ add_executable(ob_tests
     bench_result_test.cpp
     itch_messages_test.cpp
     reader_fixture_test.cpp
+    decoder_census_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
     ob_itch ob_book ob_engine ob_queue ob_bench
