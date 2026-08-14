@@ -1,0 +1,35 @@
+# Local working docs (overlaid at build time; never committed)
+.meta/
+.claude/
+
+# Build trees
+build/
+build-*/
+cmake-build-*/
+out/
+
+# Objects & binaries
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+
+# Test / profiler / fuzzer output
+Testing/
+callgrind.out.*
+perf.data*
+crash-*
+fuzz-*.log
+corpus/
+
+# Market data (fetched, never committed)
+*.gz
+*.NASDAQ_ITCH50
+
+# Editors & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
