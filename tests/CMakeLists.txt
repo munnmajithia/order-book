@@ -20,6 +20,7 @@ add_executable(ob_tests
     reader_fixture_test.cpp
     decoder_census_test.cpp
     reference_book_test.cpp
+    golden_snapshot_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
     ob_itch ob_book ob_engine ob_queue ob_bench
