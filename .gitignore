@@ -23,7 +23,8 @@ crash-*
 fuzz-*.log
 corpus/
 
-# Market data (fetched, never committed)
+# Market data (fetched, never committed); /data/ anchored so tests/data/ stays trackable
+/data/
 *.gz
 *.NASDAQ_ITCH50
 
