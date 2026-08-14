@@ -1,0 +1,18 @@
+# kept message count per type
+A 103204
+C 73
+D 30847
+E 7609
+F 2500
+H 3
+I 361
+L 159
+P 2898
+Q 3
+R 3
+S 3
+U 4085
+X 254
+Y 3
+frames 152005
+bytes 5242875
