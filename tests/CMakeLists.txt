@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(ob_tests
     smoke_test.cpp
+    histogram_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
     ob_itch ob_book ob_engine ob_queue ob_bench
