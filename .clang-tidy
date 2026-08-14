@@ -1,0 +1,28 @@
+# Removed checks, with reasons (see docs/decisions.md):
+#   modernize-use-trailing-return-type — style preference, not used here.
+#   readability-identifier-length — bans idiomatic short names (i, it, lhs).
+#   *-magic-numbers — bench and parser code is full of spec constants.
+#   cppcoreguidelines-pro-bounds-constant-array-index — bans every computed
+#     index into a fixed-size array without GSL; that is the histogram's whole
+#     data structure and, later, the book's level arrays.
+#   bugprone-easily-swappable-parameters — fires on ordinary (name, value) pairs.
+Checks: >
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -bugprone-easily-swappable-parameters
+WarningsAsErrors: '*'
+CheckOptions:
+  # glibc's bits/ headers are implementation detail behind the public ones.
+  misc-include-cleaner.IgnoreHeaders: 'bits/.*'
+  # All-public data structs are the intended shape for message layouts.
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true

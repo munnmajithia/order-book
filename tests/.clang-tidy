@@ -1,0 +1,3 @@
+# Tests inherit the root config; long test bodies are fine.
+InheritParentConfig: true
+Checks: '-readability-function-cognitive-complexity'
