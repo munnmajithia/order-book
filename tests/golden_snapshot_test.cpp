@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -37,9 +38,16 @@ TEST(GoldenSnapshot, EndOfFixtureBookMatchesCommitted) {
     const MappedFile file(std::string(OB_TEST_DATA_DIR) + "/fixture.itch");
     FrameReader reader(file.bytes());
     BookHandler handler;
+    uint64_t frames = 0;
     while (const auto frame = reader.next()) {
         decode(*frame, handler);
+        // Debug-replay invariant sweep; crossing is only enforced inside
+        // market hours because the pre-open book crosses legally.
+        if (++frames % 4096 == 0) {
+            handler.book.check_invariants(handler.book.in_market_hours());
+        }
     }
+    handler.book.check_invariants(handler.book.in_market_hours());
 
     std::ostringstream produced;
     handler.book.write_snapshot(produced);

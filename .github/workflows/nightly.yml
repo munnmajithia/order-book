@@ -1,0 +1,38 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    name: fuzz-10min
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libclang-rt-18-dev
+      - name: Configure
+        run: cmake --preset clang-fuzz
+      - name: Build
+        run: cmake --build --preset clang-fuzz
+      - name: Seed corpus
+        run: python3 fuzz/make_seeds.py tests/data/fixture.itch build/seeds
+      - name: Fuzz for 10 minutes
+        run: |
+          mkdir -p build/corpus
+          ./build/clang-fuzz/fuzz/ob_itch_fuzz build/corpus build/seeds \
+            -max_total_time=600 -print_final_stats=1
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: |
+            crash-*
+            oom-*
+            timeout-*
+          if-no-files-found: ignore
