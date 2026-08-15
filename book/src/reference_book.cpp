@@ -1,5 +1,6 @@
 #include "book/reference_book.hpp"
 
+#include "book/snapshot_hash.hpp"
 #include "itch/messages.hpp"
 
 #include <cstdint>
@@ -10,20 +11,6 @@
 #include <utility>
 
 namespace ob::book {
-
-namespace {
-
-// FNV-1a over the snapshot text, so the golden file carries a fingerprint.
-uint64_t fnv1a(const std::string& text) {
-    uint64_t hash = 0xcbf29ce484222325ULL;
-    for (const char c : text) {
-        hash ^= static_cast<unsigned char>(c);
-        hash *= 0x100000001b3ULL;
-    }
-    return hash;
-}
-
-} // namespace
 
 void ReferenceBook::apply(const itch::SystemEvent& msg) {
     // Q/M bracket regular market hours; the other codes don't matter here.
