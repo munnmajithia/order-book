@@ -26,8 +26,9 @@ class BookError : public std::runtime_error {
 
 class ReferenceBook {
   public:
-    // Decoded-message application. S and P do not change the book but flow
-    // through so a replay can hand every decoded message to one place.
+    // Decoded-message application. P does not change the book but flows
+    // through so a replay can hand every decoded message to one place; S
+    // only tracks the market-hours state used by invariant checking.
     void apply(const itch::SystemEvent& msg);
     void apply(const itch::StockDirectory& msg);
     void apply(const itch::AddOrder& msg);
@@ -40,6 +41,17 @@ class ReferenceBook {
     void apply(const itch::Trade& msg);
 
     [[nodiscard]] std::size_t open_order_count() const { return orders_.size(); }
+
+    // True between the Q (start of market hours) and M (end of market hours)
+    // system events. The book can be legitimately crossed outside them.
+    [[nodiscard]] bool in_market_hours() const { return market_hours_; }
+
+    // Walks the whole book and throws BookError on the first violation:
+    // empty level queues, zero-share resting orders, or an order index that
+    // disagrees with the queues. With require_uncrossed, also demands
+    // best bid < best ask for every stock with both sides populated —
+    // callers pass in_market_hours(), since pre-open books cross legally.
+    void check_invariants(bool require_uncrossed) const;
 
     // Canonical text snapshot of the whole book: every stock with a level,
     // every level with its total quantity and order count, prices as raw
@@ -67,6 +79,9 @@ class ReferenceBook {
         Queue::iterator position;
     };
 
+    // Invariant sweep of one level; returns the number of resting orders.
+    uint64_t check_level(uint16_t locate, char side_tag, uint32_t price, const Queue& queue) const;
+
     void add_order(uint16_t locate, uint64_t ref, char side, uint32_t shares, uint32_t price);
     void reduce_order(uint64_t ref, uint32_t shares, const char* what);
     void remove_order(uint64_t ref, const char* what);
@@ -76,6 +91,7 @@ class ReferenceBook {
     std::unordered_map<uint16_t, Side> stocks_;
     std::unordered_map<uint16_t, std::string> names_; // locate -> trimmed symbol
     std::unordered_map<uint64_t, OrderLocation> orders_;
+    bool market_hours_ = false;
 };
 
 } // namespace ob::book

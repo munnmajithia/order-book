@@ -25,9 +25,14 @@ uint64_t fnv1a(const std::string& text) {
 
 } // namespace
 
-// Not static: the apply overloads are one interface, applied per instance.
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void ReferenceBook::apply(const itch::SystemEvent& msg) { (void)msg; }
+void ReferenceBook::apply(const itch::SystemEvent& msg) {
+    // Q/M bracket regular market hours; the other codes don't matter here.
+    if (msg.event_code == 'Q') {
+        market_hours_ = true;
+    } else if (msg.event_code == 'M') {
+        market_hours_ = false;
+    }
+}
 
 void ReferenceBook::apply(const itch::StockDirectory& msg) {
     names_[static_cast<uint16_t>(msg.header.locate.value())] = std::string(msg.stock.trimmed());
@@ -135,6 +140,58 @@ void ReferenceBook::remove_order(uint64_t ref, const char* what) {
         }
     }
     orders_.erase(ref);
+}
+
+uint64_t ReferenceBook::check_level(uint16_t locate, char side_tag, uint32_t price,
+                                    const Queue& queue) const {
+    if (queue.empty()) {
+        throw BookError("invariant: empty level at price " + std::to_string(price) + " locate " +
+                        std::to_string(locate));
+    }
+    uint64_t entries = 0;
+    for (const auto& entry : queue) {
+        ++entries;
+        if (entry.shares == 0) {
+            throw BookError("invariant: zero-share resting order ref " + std::to_string(entry.ref));
+        }
+        const auto it = orders_.find(entry.ref);
+        if (it == orders_.end()) {
+            throw BookError("invariant: resting ref " + std::to_string(entry.ref) +
+                            " missing from index");
+        }
+        const OrderLocation& loc = it->second;
+        if (loc.locate != locate || loc.side != side_tag || loc.price != price ||
+            &*loc.position != &entry) {
+            throw BookError("invariant: index disagrees with queue for ref " +
+                            std::to_string(entry.ref));
+        }
+    }
+    return entries;
+}
+
+void ReferenceBook::check_invariants(bool require_uncrossed) const {
+    uint64_t entries = 0;
+    for (const auto& [locate, side] : stocks_) {
+        for (const auto& [price, queue] : side.bids) {
+            entries += check_level(locate, 'B', price, queue);
+        }
+        for (const auto& [price, queue] : side.asks) {
+            entries += check_level(locate, 'S', price, queue);
+        }
+        if (require_uncrossed && !side.bids.empty() && !side.asks.empty()) {
+            const uint32_t best_bid = side.bids.begin()->first;
+            const uint32_t best_ask = side.asks.begin()->first;
+            if (best_bid >= best_ask) {
+                throw BookError("invariant: crossed book locate " + std::to_string(locate) +
+                                " bid " + std::to_string(best_bid) + " ask " +
+                                std::to_string(best_ask));
+            }
+        }
+    }
+    if (entries != orders_.size()) {
+        throw BookError("invariant: index holds " + std::to_string(orders_.size()) +
+                        " orders, queues hold " + std::to_string(entries));
+    }
 }
 
 void ReferenceBook::write_snapshot(std::ostream& out) const {
