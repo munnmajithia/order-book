@@ -17,6 +17,7 @@ add_executable(ob_tests
     histogram_test.cpp
     bench_result_test.cpp
     itch_messages_test.cpp
+    itch_malformed_test.cpp
     reader_fixture_test.cpp
     decoder_census_test.cpp
     reference_book_test.cpp
