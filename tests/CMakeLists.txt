@@ -22,6 +22,7 @@ add_executable(ob_tests
     decoder_census_test.cpp
     reference_book_test.cpp
     book_property_test.cpp
+    fast_book_cross_test.cpp
     golden_snapshot_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
