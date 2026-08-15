@@ -43,3 +43,22 @@ Append-only. One entry per engineering decision worth remembering; newest last.
   "level quantity = sum of resting orders" invariant is checked where it can
   actually drift: the property suite compares snapshot sums against an
   independent shadow model instead.
+
+## Fast book v1
+
+- **Level lookup starts as one open-addressing map** keyed by packed
+  (locate, side, price) — linear probing, tombstone deletion, reserve-sized
+  with doubling. Key 0 is the empty marker; the packed key carries a salt bit
+  so it is never 0, and order ref 0 is rejected at add (refs are day-unique
+  and nonzero in real feeds). Revisit only if a profile indicts it.
+- **Per-side level ordering is an intrusive sorted list, best at head**:
+  insertion walks from the touch, which is cheap for the near-touch adds that
+  dominate real flow and gives best-level tracking and ordered snapshots for
+  free. This is the v1 baseline the optimization ladder measures against.
+- **Level totals are maintained incrementally** in the fast book (the
+  reference derives them by walking); cross-validation compares the two
+  snapshots byte for byte, so any drift in the maintained totals is caught
+  against the derived truth.
+- **Locate-indexed arrays, not hashing, for per-stock state**: locate is 16
+  bits, so flat 65536-entry vectors for side lists and names are 3 MB total
+  and remove a lookup from every message.
