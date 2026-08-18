@@ -12,10 +12,12 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace ob::book {
 
@@ -40,6 +42,32 @@ class ReferenceBook {
     void apply(const itch::Trade& msg);
 
     [[nodiscard]] std::size_t open_order_count() const { return orders_.size(); }
+
+    // Best resting prices for a stock, or nullopt when that side has no level.
+    // Bids are kept high-to-low and asks low-to-high, so each side's best is
+    // the front of its map.
+    [[nodiscard]] std::optional<uint32_t> best_bid(uint16_t locate) const;
+    [[nodiscard]] std::optional<uint32_t> best_ask(uint16_t locate) const;
+
+    // Total resting shares across a whole side of one stock, walked from the
+    // queues so the number cannot drift from the orders it sums.
+    [[nodiscard]] uint64_t side_quantity(uint16_t locate, char side) const;
+
+    // Structural invariants that must hold after every applied message:
+    //   - the order index and the queues agree (same count, and each indexed
+    //     order rests where the index says, with the ref it was filed under);
+    //   - no price level is present but empty;
+    //   - every resting order has positive size.
+    // Throws BookError naming the first violation. The book being crossed
+    // (best bid >= best ask) is a separate, weaker property checked by
+    // is_crossed rather than here, because real ITCH streams lock and cross
+    // transiently and the structural checks must hold on that same data.
+    void check_invariants() const;
+
+    // True when some stock has both sides and its best bid is at or above its
+    // best ask. Generated test flows keep the book uncrossed and assert this
+    // stays false; the fixture replay only records where it happens.
+    [[nodiscard]] bool is_crossed() const;
 
     // Canonical text snapshot of the whole book: every stock with a level,
     // every level with its total quantity and order count, prices as raw
@@ -66,6 +94,12 @@ class ReferenceBook {
         uint32_t price;
         Queue::iterator position;
     };
+
+    // Checks one price level for check_invariants and records each resting ref
+    // into `refs`, throwing on an empty level, a zero-share order, or a ref
+    // that rests in more than one place.
+    static void scan_level(const Queue& queue, char tag, uint32_t price, uint16_t locate,
+                           std::unordered_set<uint64_t>& refs);
 
     void add_order(uint16_t locate, uint64_t ref, char side, uint32_t shares, uint32_t price);
     void reduce_order(uint64_t ref, uint32_t shares, const char* what);

@@ -2,11 +2,14 @@
 
 #include "itch/messages.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace ob::book {
@@ -135,6 +138,95 @@ void ReferenceBook::remove_order(uint64_t ref, const char* what) {
         }
     }
     orders_.erase(ref);
+}
+
+std::optional<uint32_t> ReferenceBook::best_bid(uint16_t locate) const {
+    const auto it = stocks_.find(locate);
+    if (it == stocks_.end() || it->second.bids.empty()) {
+        return std::nullopt;
+    }
+    return it->second.bids.begin()->first;
+}
+
+std::optional<uint32_t> ReferenceBook::best_ask(uint16_t locate) const {
+    const auto it = stocks_.find(locate);
+    if (it == stocks_.end() || it->second.asks.empty()) {
+        return std::nullopt;
+    }
+    return it->second.asks.begin()->first;
+}
+
+uint64_t ReferenceBook::side_quantity(uint16_t locate, char side) const {
+    const auto it = stocks_.find(locate);
+    if (it == stocks_.end()) {
+        return 0;
+    }
+    uint64_t qty = 0;
+    const auto sum = [&qty](const auto& levels) {
+        for (const auto& [price, queue] : levels) {
+            (void)price;
+            for (const auto& entry : queue) {
+                qty += entry.shares;
+            }
+        }
+    };
+    if (side == 'B') {
+        sum(it->second.bids);
+    } else {
+        sum(it->second.asks);
+    }
+    return qty;
+}
+
+void ReferenceBook::check_invariants() const {
+    // Collect the ref of every resting order while checking each level. The
+    // set is then compared to the index, which catches a count mismatch, a
+    // duplicate ref, and an indexed order that no longer rests, without
+    // dereferencing the stored iterators.
+    std::unordered_set<uint64_t> resting_refs;
+    for (const auto& [locate, side] : stocks_) {
+        for (const auto& [price, queue] : side.bids) {
+            scan_level(queue, 'B', price, locate, resting_refs);
+        }
+        for (const auto& [price, queue] : side.asks) {
+            scan_level(queue, 'S', price, locate, resting_refs);
+        }
+    }
+    if (resting_refs.size() != orders_.size()) {
+        throw BookError("invariant: index has " + std::to_string(orders_.size()) +
+                        " orders, queues hold " + std::to_string(resting_refs.size()));
+    }
+    for (const auto& [ref, loc] : orders_) {
+        (void)loc;
+        if (!resting_refs.contains(ref)) {
+            throw BookError("invariant: indexed ref " + std::to_string(ref) + " is not resting");
+        }
+    }
+}
+
+void ReferenceBook::scan_level(const Queue& queue, char tag, uint32_t price, uint16_t locate,
+                               std::unordered_set<uint64_t>& refs) {
+    if (queue.empty()) {
+        throw BookError("invariant: empty level " + std::string(1, tag) + " at price " +
+                        std::to_string(price) + " locate " + std::to_string(locate));
+    }
+    for (const auto& entry : queue) {
+        if (entry.shares == 0) {
+            throw BookError("invariant: zero-share resting order ref " + std::to_string(entry.ref));
+        }
+        if (!refs.insert(entry.ref).second) {
+            throw BookError("invariant: ref " + std::to_string(entry.ref) +
+                            " rests in more than one place");
+        }
+    }
+}
+
+bool ReferenceBook::is_crossed() const {
+    return std::ranges::any_of(stocks_, [](const auto& entry) {
+        const Side& side = entry.second;
+        return !side.bids.empty() && !side.asks.empty() &&
+               side.bids.begin()->first >= side.asks.begin()->first;
+    });
 }
 
 void ReferenceBook::write_snapshot(std::ostream& out) const {
