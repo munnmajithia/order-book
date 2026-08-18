@@ -24,6 +24,8 @@ add_executable(ob_tests
     book_invariants_test.cpp
     book_property_test.cpp
     replay_invariants_test.cpp
+    fast_book_test.cpp
+    fast_book_xval_test.cpp
     golden_snapshot_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
