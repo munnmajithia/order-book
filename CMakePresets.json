@@ -28,7 +28,17 @@
         { "name": "clang-release", "inherits": "clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
         { "name": "clang-asan", "inherits": "clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "OB_SANITIZE": "asan" } },
         { "name": "clang-ubsan", "inherits": "clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "OB_SANITIZE": "ubsan" } },
-        { "name": "clang-tsan", "inherits": "clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "OB_SANITIZE": "tsan" } }
+        { "name": "clang-tsan", "inherits": "clang", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "OB_SANITIZE": "tsan" } },
+        {
+            "name": "clang-fuzz-asan",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo", "OB_SANITIZE": "asan", "OB_FUZZER": "ON" }
+        },
+        {
+            "name": "clang-fuzz-ubsan",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo", "OB_SANITIZE": "ubsan", "OB_FUZZER": "ON" }
+        }
     ],
     "buildPresets": [
         { "name": "gcc-debug", "configurePreset": "gcc-debug" },
@@ -40,7 +50,9 @@
         { "name": "clang-release", "configurePreset": "clang-release" },
         { "name": "clang-asan", "configurePreset": "clang-asan" },
         { "name": "clang-ubsan", "configurePreset": "clang-ubsan" },
-        { "name": "clang-tsan", "configurePreset": "clang-tsan" }
+        { "name": "clang-tsan", "configurePreset": "clang-tsan" },
+        { "name": "clang-fuzz-asan", "configurePreset": "clang-fuzz-asan" },
+        { "name": "clang-fuzz-ubsan", "configurePreset": "clang-fuzz-ubsan" }
     ],
     "testPresets": [
         { "name": "gcc-debug", "configurePreset": "gcc-debug", "output": { "outputOnFailure": true } },

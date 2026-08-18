@@ -11,6 +11,13 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror)
 
+option(OB_FUZZER "Build the libFuzzer targets (clang only)" OFF)
+if(OB_FUZZER)
+    # Instruments every translation unit in this build tree so the fuzzer gets
+    # coverage feedback through the parser, not just through its own entry point.
+    add_compile_options(-fsanitize=fuzzer-no-link)
+endif()
+
 set(OB_SANITIZE "" CACHE STRING "Sanitizer preset: asan, ubsan, tsan, or empty")
 if(OB_SANITIZE STREQUAL "asan")
     add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
@@ -31,4 +38,5 @@ add_subdirectory(engine)
 add_subdirectory(queue)
 add_subdirectory(bench)
 add_subdirectory(tools)
+add_subdirectory(fuzz)
 add_subdirectory(tests)
