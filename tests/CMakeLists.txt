@@ -33,4 +33,12 @@ target_compile_definitions(ob_tests PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(ob_tests DISCOVERY_TIMEOUT 60)
-
+# Seed a corpus from the fixture and replay it through the fuzz entry point.
+# libFuzzer is clang-only, but this runs the same code in every preset, so the
+# fuzz path is covered by ASan, UBSan and TSan too.
+set(OB_FUZZ_CORPUS "${CMAKE_CURRENT_BINARY_DIR}/fuzz-corpus")
+add_test(NAME FuzzCorpus.Seed
+    COMMAND ob_fuzz_seed "${CMAKE_CURRENT_SOURCE_DIR}/data/fixture.itch" "${OB_FUZZ_CORPUS}")
+set_tests_properties(FuzzCorpus.Seed PROPERTIES FIXTURES_SETUP ob_fuzz_corpus)
+add_test(NAME FuzzCorpus.Replay COMMAND ob_fuzz_replay "${OB_FUZZ_CORPUS}")
+set_tests_properties(FuzzCorpus.Replay PROPERTIES FIXTURES_REQUIRED ob_fuzz_corpus)
