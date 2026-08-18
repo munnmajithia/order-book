@@ -48,9 +48,16 @@ The data spine, end to end and tested:
   across the whole fixture replay and after every step of generated order flow; the
   property suite also checks share conservation and that a valid flow never crosses the
   book, all under ASan and UBSan.
+- **Fast book v1** (`book/fast_book.*`): the optimized book, orders held in a slab pool
+  with a free list and intrusive per-level FIFO links so applying a message allocates
+  nothing once the pool has grown. It is cross-validated against the reference on every
+  fixture replay — snapshots compared every 1,000 messages and byte-for-byte at the end —
+  and any divergence fails CI. Two of its acceptance checks are not run here yet: the
+  sampled full-day cross-validation needs the multi-gigabyte day file, and the first
+  benchmark-ladder entry needs the designated bench machine.
 
-Deliberately not here yet: the fast book, the matching engine, the SPSC pipeline, and
-the demo.
+Deliberately not here yet: the measured optimization ladder, the matching engine, the
+SPSC pipeline, and the demo.
 
 ## Results
 

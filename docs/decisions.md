@@ -79,3 +79,30 @@ Append-only. One entry per engineering decision worth remembering; newest last.
   check on the best-price accessors rather than a tautology, and share
   conservation (added = executed + cancelled + deleted + resting) is checked
   against an independent shadow model.
+
+## Fast book v1
+
+- **Level lookup is an ordered `std::map` per side for v1, not a hash.** The plan
+  floated a reserve-sized open-addressing map keyed by (side, price), but v1's
+  job is correctness cross-validated against the reference, and an ordered map
+  gives the best level as its front and produces the snapshot in the reference's
+  order for free. The level-lookup structure is exactly what C3.2 profiles and may
+  replace; committing to a hash now would be optimizing without a profile, which
+  the project forbids. The distinctive fast mechanics — a slab order pool with a
+  free list and intrusive per-level FIFO links — are here from v1.
+- **The cross-validation contract is snapshot equality.** Both books emit the same
+  text snapshot (same ordering, same FNV-1a trailer), so the dual replay compares
+  their full observable state rather than a hand-picked set of fields. It runs
+  every 1,000 messages and once exactly at end of fixture; a divergence is a
+  stop-the-world bug and fails CI.
+- **The fast book tracks level totals incrementally; the reference walks the queue.**
+  That is the whole point of having two books — the fast one maintains derived state
+  and the slow one recomputes it, so cross-validation catches any drift. A delete
+  therefore has to subtract the resting remainder from the level total explicitly,
+  where the reference simply stops counting a removed order.
+- **C3.1 lands partial (fixture cross-validation only).** Its other two acceptance
+  checks are environment-blocked here and unchanged by this work: the sampled
+  full-day cross-validation needs the ~4.8 GB day file (egress-blocked), and the
+  first ladder entry needs the designated bench machine (this box is not one, so
+  every number it would produce is dev-only by construction). Those close on a run
+  with the data path or the bench machine available.
