@@ -38,9 +38,14 @@ The data spine, end to end and tested:
 - **Reference book** (`book/`): per-side `std::map` price levels, FIFO order queues,
   strict error checking; replays the whole fixture and must reproduce the committed
   golden end-of-fixture snapshot byte for byte in CI.
+- **Parser hardening** (`fuzz/`): a libFuzzer target over the framing and decode path,
+  its corpus seeded from the fixture's own frames; malformed-input tests covering every
+  throw condition plus truncated, oversized and hostile streams. The same entry point
+  replays the seeded corpus under all ten presets in CI, and a nightly job fuzzes for
+  ten minutes under ASan and UBSan.
 
-Deliberately not here yet: parser fuzzing/hardening, property tests beyond the golden
-snapshot, the fast book, the matching engine, the SPSC pipeline, and the demo.
+Deliberately not here yet: property tests beyond the golden snapshot, the fast book,
+the matching engine, the SPSC pipeline, and the demo.
 
 ## Results
 
@@ -61,8 +66,28 @@ cmake --build --preset gcc-release
 ctest --preset gcc-release
 ```
 
-Presets cover gcc/clang × debug/release/asan/ubsan/tsan. CI runs the full matrix plus
-clang-format and clang-tidy; every commit is expected to be green everywhere.
+Presets cover gcc/clang × debug/release/asan/ubsan/tsan, plus two clang fuzzing presets.
+CI runs the full matrix plus clang-format and clang-tidy; every commit is expected to be
+green everywhere.
+
+## Fuzzing
+
+```sh
+cmake --preset clang-fuzz-asan            # or clang-fuzz-ubsan
+cmake --build --preset clang-fuzz-asan
+build/clang-fuzz-asan/tools/ob_fuzz_seed tests/data/fixture.itch corpus
+build/clang-fuzz-asan/fuzz/ob_framing_fuzzer corpus -max_total_time=600
+```
+
+The corpus is generated, never committed: the fixture already holds the bytes, and a
+second copy would be free to drift from it. `ob_fuzz_seed` writes one seed per message
+type present in the stream plus short multi-frame windows, so the fuzzer starts past the
+length prefix instead of rediscovering it.
+
+Crash artifacts replay from any build — `ob_fuzz_replay FILE_OR_DIR...` links the same
+entry point without libFuzzer, which is also how the seeded corpus gets exercised under
+gcc and TSan. Every crash the fuzzer finds becomes a case in
+`tests/malformed_input_test.cpp` before the fix that closes it.
 
 ## Working with the data
 
