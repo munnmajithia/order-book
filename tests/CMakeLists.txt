@@ -21,12 +21,16 @@ add_executable(ob_tests
     decoder_census_test.cpp
     malformed_input_test.cpp
     reference_book_test.cpp
+    book_invariants_test.cpp
+    book_property_test.cpp
+    replay_invariants_test.cpp
     golden_snapshot_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
     ob_itch ob_book ob_engine ob_queue ob_bench ob_fuzz_entry
     GTest::gtest_main
 )
+target_include_directories(ob_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_definitions(ob_tests PRIVATE
     OB_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
 )
