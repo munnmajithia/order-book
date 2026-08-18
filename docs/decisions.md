@@ -55,3 +55,27 @@ Append-only. One entry per engineering decision worth remembering; newest last.
   full 65535. The spec fixes no length for them, so the prefix is the only
   authority; rejecting them would make the parser stricter than the protocol and
   break on any future message type.
+
+## Reference book invariants
+
+- **The book being crossed is not a structural invariant.** `check_invariants`
+  enforces only what must always hold — the order index agrees with the queues,
+  no level is present but empty, every resting order has positive size — because
+  those hold on real ITCH data. Best-bid-below-best-ask is exposed separately as
+  `is_crossed`: generated flows assert it stays false, but a real stream locks
+  and crosses transiently and the structural checks must survive that same data.
+- **Index consistency is checked by set comparison, not by dereferencing the
+  stored iterators.** Walking the queues into a set of resting refs and comparing
+  that to the index catches a count mismatch, a duplicated ref, and an indexed
+  order that no longer rests — a stronger check than following each stored list
+  iterator, and one the static analyzer can reason about.
+- **Invariants run sampled during replay, in full at the end.** The check is
+  O(open orders), so running it on all 151,476 fixture messages would be
+  quadratic; it samples every 2,000 messages and then runs once on the exact
+  final state. The property suite runs it after every generated op, where the
+  books are small.
+- **Property flows are generated uncrossed on purpose.** Bids are drawn from a
+  price band strictly below the ask band, so `is_crossed` staying false is a real
+  check on the best-price accessors rather than a tautology, and share
+  conservation (added = executed + cancelled + deleted + resting) is checked
+  against an independent shadow model.

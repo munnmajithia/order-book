@@ -43,9 +43,14 @@ The data spine, end to end and tested:
   throw condition plus truncated, oversized and hostile streams. The same entry point
   replays the seeded corpus under all ten presets in CI, and a nightly job fuzzes for
   ten minutes under ASan and UBSan.
+- **Book invariants + property tests** (`book/`, `tests/`): structural invariants (the
+  order index agrees with the queues, no empty levels, every resting order positive) run
+  across the whole fixture replay and after every step of generated order flow; the
+  property suite also checks share conservation and that a valid flow never crosses the
+  book, all under ASan and UBSan.
 
-Deliberately not here yet: property tests beyond the golden snapshot, the fast book,
-the matching engine, the SPSC pipeline, and the demo.
+Deliberately not here yet: the fast book, the matching engine, the SPSC pipeline, and
+the demo.
 
 ## Results
 
