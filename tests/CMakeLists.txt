@@ -19,11 +19,12 @@ add_executable(ob_tests
     itch_messages_test.cpp
     reader_fixture_test.cpp
     decoder_census_test.cpp
+    malformed_input_test.cpp
     reference_book_test.cpp
     golden_snapshot_test.cpp
 )
 target_link_libraries(ob_tests PRIVATE
-    ob_itch ob_book ob_engine ob_queue ob_bench
+    ob_itch ob_book ob_engine ob_queue ob_bench ob_fuzz_entry
     GTest::gtest_main
 )
 target_compile_definitions(ob_tests PRIVATE
@@ -32,3 +33,4 @@ target_compile_definitions(ob_tests PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(ob_tests DISCOVERY_TIMEOUT 60)
+
