@@ -52,9 +52,12 @@ The data spine, end to end and tested:
   with a free list and intrusive per-level FIFO links so applying a message allocates
   nothing once the pool has grown. It is cross-validated against the reference on every
   fixture replay — snapshots compared every 1,000 messages and byte-for-byte at the end —
-  and any divergence fails CI. Two of its acceptance checks are not run here yet: the
-  sampled full-day cross-validation needs the multi-gigabyte day file, and the first
-  benchmark-ladder entry needs the designated bench machine.
+  and any divergence fails CI. The same check has been run at day scale with
+  `ob_xval_replay` (`tools/`), a local tool that replays an uncompressed day file through
+  both books: across all 364,453,119 book messages of the 2019-01-30 file, snapshots
+  sampled every 5,000,000 messages and the final state matched exactly. One acceptance
+  check is still outstanding: the first benchmark-ladder entry needs the designated
+  bench machine.
 
 Deliberately not here yet: the measured optimization ladder, the matching engine, the
 SPSC pipeline, and the demo.

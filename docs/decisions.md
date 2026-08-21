@@ -106,3 +106,19 @@ Append-only. One entry per engineering decision worth remembering; newest last.
   first ladder entry needs the designated bench machine (this box is not one, so
   every number it would produce is dev-only by construction). Those close on a run
   with the data path or the bench machine available.
+
+## Full-day cross-validation
+
+- **The fast book matched the reference across the whole 2019-01-30 day.**
+  `ob_xval_replay` (tools/) replays an uncompressed day file through both books
+  at once: 364,453,119 book messages applied, 3,913,515 non-book messages
+  skipped, zero unknown types. Snapshots were compared every 5,000,000 applied
+  messages — 72 samples, all equal — plus byte-for-byte at end of stream. Both
+  books end the day empty (the feed deletes every resting order by close), so
+  the mid-day samples carry the real weight and the final comparison pins the
+  terminal state.
+- **The tool is local by design.** The day file is multi-gigabyte and never
+  lands in CI; the fixture half of the cross-validation
+  (tests/fast_book_xval_test.cpp) stays the CI gate. With this run, C3.1's one
+  remaining acceptance check is the first benchmark-ladder entry, which waits
+  on a designated bench machine.
